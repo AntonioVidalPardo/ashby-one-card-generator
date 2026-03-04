@@ -35,7 +35,7 @@ export default function Navbar() {
           className="text-[#0E0C29] no-underline transition-opacity hover:opacity-80"
         >
           <img
-            src="/ashby-one-logo.svg"
+            src={`${import.meta.env.BASE_URL}ashby-one-logo.svg`}
             alt="Ashby One"
             className="h-[22px] w-auto lg:h-[28px]"
           />
