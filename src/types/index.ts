@@ -30,7 +30,6 @@ export interface DuotoneConfig {
 export interface OutputConfig {
   width: number;
   height: number;
-  filename: string;
 }
 
 export interface UploadConfig {
@@ -40,11 +39,20 @@ export interface UploadConfig {
   acceptedTypes: string[];
 }
 
+export type Edition = "san-francisco" | "london";
+
+export interface EditionConfig {
+  templateSrc: string;
+  label: string;
+  filename: string;
+}
+
 export interface EventConfig {
   output: OutputConfig;
   photoFrame: PhotoFrameConfig;
   duotone: DuotoneConfig;
-  templateSrc: string;
+  editions: Record<Edition, EditionConfig>;
+  defaultEdition: Edition;
   /** Showcase photos to cycle through before the user uploads their own */
   showcasePhotos: string[];
   upload: UploadConfig;

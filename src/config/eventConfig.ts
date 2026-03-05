@@ -11,7 +11,6 @@ export const eventConfig: EventConfig = {
   output: {
     width: 1080,
     height: 1080,
-    filename: "ashby-one-card.png",
   },
   photoFrame: {
     x: 564,
@@ -29,7 +28,19 @@ export const eventConfig: EventConfig = {
     },
     contrast: 1.3,
   },
-  templateSrc: `${import.meta.env.BASE_URL}template-bg.png`,
+  editions: {
+    "san-francisco": {
+      templateSrc: `${import.meta.env.BASE_URL}template-bg-sf.png`,
+      label: "San Francisco",
+      filename: "ashby-one-card-sf.png",
+    },
+    london: {
+      templateSrc: `${import.meta.env.BASE_URL}template-bg-london.png`,
+      label: "London",
+      filename: "ashby-one-card-london.png",
+    },
+  },
+  defaultEdition: "san-francisco",
   showcasePhotos: [
     `${import.meta.env.BASE_URL}showcase/1.jpg`,
     `${import.meta.env.BASE_URL}showcase/2.jpg`,
