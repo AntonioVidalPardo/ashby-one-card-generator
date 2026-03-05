@@ -4,7 +4,7 @@
 
 @font-face {
   font-family: "TT Norms Pro Expanded";
-  src: url("/TT_Norms_Pro_Expanded_ExtraBold.ttf") format("truetype");
+  src: url("../public/TT_Norms_Pro_Expanded_ExtraBold.ttf") format("truetype");
   font-weight: 800;
   font-style: normal;
   font-display: swap;
