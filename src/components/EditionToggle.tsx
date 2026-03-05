@@ -13,7 +13,7 @@ interface EditionToggleProps {
 
 export default function EditionToggle({ value, onChange }: EditionToggleProps) {
   return (
-    <div className="inline-flex rounded-full bg-[#e8e8e8] p-1 gap-1 ring-2 ring-primary">
+    <div className="inline-flex self-start rounded-full bg-[#e8e8e8] p-1 gap-1 ring-2 ring-primary">
       {editions.map(([key, config]) => {
         const isActive = key === value;
         return (
