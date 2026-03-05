@@ -269,9 +269,9 @@ export default function CardGenerator() {
       </div>
 
       {/* Main content — two columns on desktop */}
-      <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:gap-12">
+      <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
         {/* Left: Card Preview with tilt */}
-        <div className="mx-auto flex w-full max-w-[340px] items-center justify-center lg:mx-0">
+        <div className="mx-auto flex w-full max-w-[460px] items-center justify-center py-6 lg:mx-0">
           <div className="card-tilt w-full">
             <CardPreview
               renderedCard={displayCard}
