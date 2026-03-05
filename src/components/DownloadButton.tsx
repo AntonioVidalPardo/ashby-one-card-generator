@@ -1,25 +1,25 @@
 import { useCallback, useState } from "react";
 import { downloadCard } from "../lib/downloadCard";
-import { eventConfig } from "../config/eventConfig";
 
 interface DownloadButtonProps {
   renderedCard: HTMLCanvasElement | null;
+  filename: string;
 }
 
-export default function DownloadButton({ renderedCard }: DownloadButtonProps) {
+export default function DownloadButton({ renderedCard, filename }: DownloadButtonProps) {
   const [isDownloading, setIsDownloading] = useState(false);
 
   const handleDownload = useCallback(async () => {
     if (!renderedCard) return;
     setIsDownloading(true);
     try {
-      await downloadCard(renderedCard, eventConfig.output.filename);
+      await downloadCard(renderedCard, filename);
     } catch {
       // Silently fail — the blob generation is unlikely to error
     } finally {
       setIsDownloading(false);
     }
-  }, [renderedCard]);
+  }, [renderedCard, filename]);
 
   const disabled = !renderedCard || isDownloading;
 
