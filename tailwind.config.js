@@ -35,14 +35,14 @@ export default {
       },
       fontFamily: {
         sans: [
-          "General Sans",
+          "TT Norms Pro Expanded",
           "-apple-system",
           "BlinkMacSystemFont",
           "Segoe UI",
           "sans-serif",
         ],
         display: [
-          "General Sans",
+          "TT Norms Pro Expanded",
           "-apple-system",
           "BlinkMacSystemFont",
           "Segoe UI",

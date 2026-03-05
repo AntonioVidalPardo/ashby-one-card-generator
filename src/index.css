@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "TT Norms Pro Expanded";
+  src: url("../public/TT_Norms_Pro_Expanded_ExtraBold.ttf") format("truetype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 body {
   margin: 0;
   background-color: #FAFAFA;
@@ -18,18 +26,18 @@ body {
   -webkit-backdrop-filter: blur(30px);
 }
 
-/* "Ashby One" logo text — TTNormsPro weight 411 mapped to General Sans 500 */
+/* "Ashby One" logo text — TT Norms Pro Expanded ExtraBold */
 .nav-logo {
   font-weight: 500;
   line-height: 1;
 }
 
-/* Nav links — TTNormsPro weight 635 mapped to General Sans 600 */
+/* Nav links — TT Norms Pro Expanded ExtraBold */
 .nav-link {
   font-weight: 600;
 }
 
-/* Get Tickets CTA — TTNormsPro weight 640 mapped to General Sans 600 */
+/* Get Tickets CTA — TT Norms Pro Expanded ExtraBold */
 .nav-cta {
   font-weight: 600;
   background-image: linear-gradient(
