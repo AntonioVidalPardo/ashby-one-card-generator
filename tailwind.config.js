@@ -35,7 +35,7 @@ export default {
       },
       fontFamily: {
         sans: [
-          "TT Norms Pro Expanded",
+          "General Sans",
           "-apple-system",
           "BlinkMacSystemFont",
           "Segoe UI",
