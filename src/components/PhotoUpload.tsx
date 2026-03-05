@@ -94,8 +94,8 @@ export default function PhotoUpload({
   // Processing state
   if (state === "processing") {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-surface px-6 py-10">
-        <div className="mb-3 h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-surface px-6 py-6">
+        <div className="mb-2 h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         <p className="text-sm font-medium text-text-secondary">
           Processing your photo...
         </p>
@@ -139,7 +139,7 @@ export default function PhotoUpload({
             handleClick();
           }
         }}
-        className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-10 transition-colors ${
+        className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-6 transition-colors ${
           isDragOver
             ? "border-primary bg-primary-light"
             : "border-border bg-surface hover:border-primary hover:bg-[#FAFAFF]"
@@ -147,7 +147,7 @@ export default function PhotoUpload({
       >
         {/* Upload icon */}
         <svg
-          className="mb-3 h-10 w-10 text-text-muted"
+          className="mb-2 h-8 w-8 text-text-muted"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"

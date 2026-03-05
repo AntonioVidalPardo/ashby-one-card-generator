@@ -257,20 +257,15 @@ export default function CardGenerator() {
       : null);
 
   return (
-    <div className="mx-auto w-full max-w-[1100px] px-4 py-10 sm:px-6 lg:px-8 lg:py-16">
+    <div className="mx-auto w-full max-w-[1100px] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
       {/* Header */}
-      <div className="mb-10 text-center lg:mb-14">
+      <div className="mb-8 text-center lg:mb-10">
         <h1 className="mb-3 font-display text-[36px] font-black uppercase leading-[1.05] tracking-[-0.02em] text-[#0E0C29] sm:text-[48px] md:text-[56px] lg:text-[68px]">
           Create your<br />Ashby One card
         </h1>
         <p className="text-base text-text-secondary sm:text-lg">
           Upload your photo and download your personalized attendee card.
         </p>
-      </div>
-
-      {/* Edition toggle */}
-      <div className="mb-10 flex justify-center">
-        <EditionToggle value={edition} onChange={setEdition} />
       </div>
 
       {/* Main content — two columns on desktop */}
@@ -285,8 +280,10 @@ export default function CardGenerator() {
           </div>
         </div>
 
-        {/* Right: Upload controls */}
+        {/* Right: Toggle + Upload controls */}
         <div className="flex flex-col gap-6">
+          <EditionToggle value={edition} onChange={setEdition} />
+
           <div>
             <h2 className="mb-1 text-xl font-bold text-[#0E0C29]">
               Upload your best headshot!
