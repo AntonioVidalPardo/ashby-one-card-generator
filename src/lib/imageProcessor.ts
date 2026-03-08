@@ -1,9 +1,10 @@
 import type { DuotoneConfig } from "../types";
+import { getContext2D, releaseCanvas } from "./canvasUtils";
 
 /**
  * Detects if a file is HEIC/HEIF format (common on iPhones).
  */
-function isHEIC(file: File): boolean {
+export function isHEIC(file: File): boolean {
   const type = file.type.toLowerCase();
   if (type === "image/heic" || type === "image/heif") return true;
   const name = file.name.toLowerCase();
@@ -63,7 +64,7 @@ function resizeIfNeeded(
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
-  const ctx = canvas.getContext("2d")!;
+  const ctx = getContext2D(canvas);
   ctx.drawImage(img, 0, 0, w, h);
   return canvas;
 }
@@ -72,7 +73,7 @@ function resizeIfNeeded(
  * Center-crops an image to fit the target dimensions (cover-fit).
  * The largest centered region matching the target aspect ratio is extracted.
  */
-function centerCrop(
+export function centerCrop(
   source: HTMLCanvasElement,
   targetWidth: number,
   targetHeight: number,
@@ -100,7 +101,7 @@ function centerCrop(
   const canvas = document.createElement("canvas");
   canvas.width = targetWidth;
   canvas.height = targetHeight;
-  const ctx = canvas.getContext("2d")!;
+  const ctx = getContext2D(canvas);
   ctx.drawImage(source, sx, sy, sw, sh, 0, 0, targetWidth, targetHeight);
   return canvas;
 }
@@ -108,7 +109,7 @@ function centerCrop(
 /**
  * Parses a hex color string (e.g. "#3022C8") into RGB components.
  */
-function hexToRGB(hex: string): { r: number; g: number; b: number } {
+export function hexToRGB(hex: string): { r: number; g: number; b: number } {
   const cleaned = hex.replace("#", "");
   return {
     r: parseInt(cleaned.substring(0, 2), 16),
@@ -134,13 +135,22 @@ function applyDuotone(
   config: DuotoneConfig,
 ): HTMLCanvasElement {
   const { width, height } = source;
-  const srcCtx = source.getContext("2d")!;
+  const srcCtx = getContext2D(source);
   const imageData = srcCtx.getImageData(0, 0, width, height);
   const data = imageData.data;
 
   const colorBL = hexToRGB(config.gradient.bottomLeft);
   const colorTR = hexToRGB(config.gradient.topRight);
   const gamma = 1 / (config.contrast ?? 1.0);
+
+  // Pre-compute color deltas to avoid repeated subtraction in the loop
+  const dr = colorTR.r - colorBL.r;
+  const dg = colorTR.g - colorBL.g;
+  const db = colorTR.b - colorBL.b;
+
+  // Pre-compute inverse dimensions to replace division with multiplication
+  const invWidth = 1 / width;
+  const invHeight = 1 / height;
 
   // The diagonal runs from bottom-left (0,height) to top-right (width,0).
   // For any pixel (x, y), its position along this diagonal is:
@@ -149,10 +159,11 @@ function applyDuotone(
 
   for (let y = 0; y < height; y++) {
     // Vertical component of the diagonal position (constant per row)
-    const yFactor = 1 - y / height;
+    const yFactor = 1 - y * invHeight;
+    const rowOffset = y * width;
 
     for (let x = 0; x < width; x++) {
-      const idx = (y * width + x) * 4;
+      const idx = (rowOffset + x) * 4;
 
       // 1. Grayscale (luminance-weighted)
       const gray =
@@ -162,12 +173,12 @@ function applyDuotone(
       const darkness = Math.pow(1 - gray / 255, gamma);
 
       // 3. Diagonal gradient position: 0 = bottom-left, 1 = top-right
-      const t = (x / width + yFactor) / 2;
+      const t = (x * invWidth + yFactor) * 0.5;
 
-      // 4. Interpolate gradient color at this position
-      const gr = colorBL.r + (colorTR.r - colorBL.r) * t;
-      const gg = colorBL.g + (colorTR.g - colorBL.g) * t;
-      const gb = colorBL.b + (colorTR.b - colorBL.b) * t;
+      // 4. Interpolate gradient color at this position using pre-computed deltas
+      const gr = colorBL.r + dr * t;
+      const gg = colorBL.g + dg * t;
+      const gb = colorBL.b + db * t;
 
       // 5. Blend between white (255) and gradient color based on darkness
       data[idx] = Math.round(255 + (gr - 255) * darkness);
@@ -181,7 +192,7 @@ function applyDuotone(
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext("2d")!;
+  const ctx = getContext2D(canvas);
   ctx.putImageData(imageData, 0, 0);
   return canvas;
 }
@@ -217,9 +228,11 @@ export async function processPhoto(
 
   // 4. Center-crop to target dimensions
   const cropped = centerCrop(resized, targetWidth, targetHeight);
+  releaseCanvas(resized);
 
   // 5. Apply gradient duotone effect
   const result = applyDuotone(cropped, duotone);
+  releaseCanvas(cropped);
 
   return { canvas: result, originalWidth, originalHeight };
 }
