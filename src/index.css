@@ -26,12 +26,6 @@ body {
   -webkit-backdrop-filter: blur(30px);
 }
 
-/* "Ashby One" logo text — TT Norms Pro Expanded ExtraBold */
-.nav-logo {
-  font-weight: 500;
-  line-height: 1;
-}
-
 /* Nav links — TT Norms Pro Expanded ExtraBold */
 .nav-link {
   font-weight: 600;

@@ -1,4 +1,5 @@
 import type { PhotoFrameConfig } from "../types";
+import { getContext2D } from "./canvasUtils";
 
 /**
  * Draws a rounded rectangle path on a canvas context.
@@ -57,7 +58,7 @@ export function renderCard(
   const canvas = document.createElement("canvas");
   canvas.width = outputWidth;
   canvas.height = outputHeight;
-  const ctx = canvas.getContext("2d")!;
+  const ctx = getContext2D(canvas);
 
   // 1. Draw template background
   ctx.drawImage(templateImage, 0, 0, outputWidth, outputHeight);

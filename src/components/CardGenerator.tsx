@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { eventConfig } from "../config/eventConfig";
 import { processPhoto } from "../lib/imageProcessor";
 import { loadTemplateImage, renderCard } from "../lib/cardRenderer";
+import { getInnerFrameDimensions } from "../lib/canvasUtils";
 import type { Edition, UploadState } from "../types";
 import EditionToggle from "./EditionToggle";
 import PhotoUpload from "./PhotoUpload";
@@ -14,9 +15,24 @@ import DownloadButton from "./DownloadButton";
  */
 async function fetchAsFile(url: string): Promise<File> {
   const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}: ${response.status}`);
+  }
   const blob = await response.blob();
   const filename = url.split("/").pop() ?? "photo.jpg";
   return new File([blob], filename, { type: blob.type });
+}
+
+/** Cached template load promises to avoid duplicate network requests. */
+const templatePromises = new Map<string, Promise<HTMLImageElement>>();
+
+function getTemplate(src: string): Promise<HTMLImageElement> {
+  let promise = templatePromises.get(src);
+  if (!promise) {
+    promise = loadTemplateImage(src);
+    templatePromises.set(src, promise);
+  }
+  return promise;
 }
 
 export default function CardGenerator() {
@@ -35,18 +51,26 @@ export default function CardGenerator() {
   // Store the processed photo so we can re-render on edition switch
   const processedPhotoRef = useRef<HTMLCanvasElement | null>(null);
 
+  // Cancellation counter for user photo processing
+  const processingGenRef = useRef(0);
+
   // Showcase cycling state — keyed by edition
   const [showcaseCards, setShowcaseCards] = useState<
     Partial<Record<Edition, HTMLCanvasElement[]>>
   >({});
   const [showcaseIndex, setShowcaseIndex] = useState(0);
 
+  // Cache processed showcase photos (duotone is edition-independent)
+  const showcasePhotosRef = useRef<HTMLCanvasElement[] | null>(null);
+
   const editionConfig = eventConfig.editions[edition];
+  const { innerWidth: frameInnerW, innerHeight: frameInnerH } =
+    getInnerFrameDimensions(eventConfig.photoFrame);
 
   // Preload both template images on mount
   useEffect(() => {
     for (const [key, config] of Object.entries(eventConfig.editions)) {
-      loadTemplateImage(config.templateSrc)
+      getTemplate(config.templateSrc)
         .then((img) => {
           templatesRef.current[key as Edition] = img;
         })
@@ -65,7 +89,7 @@ export default function CardGenerator() {
       let template = templatesRef.current[edition];
       if (!template) {
         try {
-          template = await loadTemplateImage(
+          template = await getTemplate(
             eventConfig.editions[edition].templateSrc,
           );
           templatesRef.current[edition] = template;
@@ -76,33 +100,43 @@ export default function CardGenerator() {
 
       const { photoFrame, duotone, output, upload, showcasePhotos } =
         eventConfig;
-      const innerW = photoFrame.width - 2 * photoFrame.borderWidth;
-      const innerH = photoFrame.height - 2 * photoFrame.borderWidth;
 
-      const cards: HTMLCanvasElement[] = [];
-
-      for (const photoUrl of showcasePhotos) {
-        if (cancelled) return;
-        try {
-          const file = await fetchAsFile(photoUrl);
-          const { canvas: processedPhoto } = await processPhoto(
-            file,
-            innerW,
-            innerH,
-            upload.maxDimensionPx,
-            duotone,
-          );
-          const card = renderCard(
-            template,
-            processedPhoto,
-            output.width,
-            output.height,
-            photoFrame,
-          );
-          cards.push(card);
-        } catch {
-          // Skip showcase photos that fail to load
+      // Process showcase photos only once (duotone is the same across editions)
+      let processedPhotos = showcasePhotosRef.current;
+      if (!processedPhotos) {
+        processedPhotos = [];
+        for (const photoUrl of showcasePhotos) {
+          if (cancelled) return;
+          try {
+            const file = await fetchAsFile(photoUrl);
+            const { canvas: processedPhoto } = await processPhoto(
+              file,
+              frameInnerW,
+              frameInnerH,
+              upload.maxDimensionPx,
+              duotone,
+            );
+            processedPhotos.push(processedPhoto);
+          } catch {
+            // Skip showcase photos that fail to load
+          }
         }
+        if (cancelled) return;
+        showcasePhotosRef.current = processedPhotos;
+      }
+
+      // Render each processed photo onto the current edition's template
+      const cards: HTMLCanvasElement[] = [];
+      for (const processedPhoto of processedPhotos) {
+        if (cancelled) return;
+        const card = renderCard(
+          template,
+          processedPhoto,
+          output.width,
+          output.height,
+          photoFrame,
+        );
+        cards.push(card);
       }
 
       if (!cancelled && cards.length > 0) {
@@ -121,14 +155,14 @@ export default function CardGenerator() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [edition]);
 
-  // Cycle through showcase cards every second (only while idle)
+  // Cycle through showcase cards every 2.5 seconds (only while idle)
   const currentShowcaseCards = showcaseCards[edition] ?? [];
   useEffect(() => {
     if (uploadState !== "idle" || currentShowcaseCards.length === 0) return;
 
     const interval = setInterval(() => {
       setShowcaseIndex((prev) => (prev + 1) % currentShowcaseCards.length);
-    }, 1000);
+    }, 2500);
 
     return () => clearInterval(interval);
   }, [uploadState, currentShowcaseCards.length]);
@@ -141,7 +175,7 @@ export default function CardGenerator() {
     const template = templatesRef.current[edition];
     if (!template) {
       // Template not loaded yet — wait for it
-      loadTemplateImage(eventConfig.editions[edition].templateSrc)
+      getTemplate(eventConfig.editions[edition].templateSrc)
         .then((img) => {
           templatesRef.current[edition] = img;
           const card = renderCard(
@@ -171,14 +205,15 @@ export default function CardGenerator() {
 
   const handlePhotoSelected = useCallback(
     async (file: File) => {
+      // Increment generation counter to cancel any previous in-flight processing
+      const gen = ++processingGenRef.current;
+
       setUploadState("processing");
       setError(null);
       setWarning(null);
 
       try {
         const { photoFrame, duotone, output, upload } = eventConfig;
-        const innerW = photoFrame.width - 2 * photoFrame.borderWidth;
-        const innerH = photoFrame.height - 2 * photoFrame.borderWidth;
 
         const {
           canvas: processedPhoto,
@@ -186,11 +221,14 @@ export default function CardGenerator() {
           originalHeight,
         } = await processPhoto(
           file,
-          innerW,
-          innerH,
+          frameInnerW,
+          frameInnerH,
           upload.maxDimensionPx,
           duotone,
         );
+
+        // If a newer upload started while we were processing, discard this result
+        if (gen !== processingGenRef.current) return;
 
         // Store for re-rendering on edition switch
         processedPhotoRef.current = processedPhoto;
@@ -206,11 +244,14 @@ export default function CardGenerator() {
         // Render card with current edition template
         let template = templatesRef.current[edition];
         if (!template) {
-          template = await loadTemplateImage(
+          template = await getTemplate(
             eventConfig.editions[edition].templateSrc,
           );
           templatesRef.current[edition] = template;
         }
+
+        // Check again after async template load
+        if (gen !== processingGenRef.current) return;
 
         const card = renderCard(
           template,
@@ -223,6 +264,9 @@ export default function CardGenerator() {
         setRenderedCard(card);
         setUploadState("done");
       } catch (err) {
+        // Discard errors from cancelled processing
+        if (gen !== processingGenRef.current) return;
+
         const message =
           err instanceof Error ? err.message : "An unexpected error occurred";
 
@@ -238,7 +282,7 @@ export default function CardGenerator() {
         setUploadState("error");
       }
     },
-    [edition],
+    [edition, frameInnerW, frameInnerH],
   );
 
   const handleReset = useCallback(() => {
